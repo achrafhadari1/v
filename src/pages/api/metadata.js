@@ -14,7 +14,12 @@ export default async function handler(req, res) {
 
     const metadata = await parseStream(stream, {
       mimeType: fileMetadata.mimeType,
-      fileSize: Number(fileMetadata.size), // 👈 IMPORTANT FIX
+      fileSize: parseInt(fileMetadata.size, 10), // ensure it's a number
+      observer: (update) => {
+        // Optional: useful for debugging
+        // console.log(update);
+      },
+      duration: true, // forces full parsing
     });
 
     const common = metadata.common;
@@ -40,8 +45,9 @@ export default async function handler(req, res) {
       albumArtUrl: lastFmInfo.albumArtUrl || null,
     });
   } catch (error) {
-    res
-      .status(500)
-      .json({ error: "Failed to extract metadata", details: error.message });
+    res.status(500).json({
+      error: "Failed to extract metadata",
+      details: error.message,
+    });
   }
 }

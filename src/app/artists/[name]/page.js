@@ -2,23 +2,37 @@
 
 import { useEffect, useState, use } from "react";
 import { usePlayerStore } from "@/store/player";
-import { PlayIcon } from "@heroicons/react/24/solid";
+import { PlayIcon, QueueListIcon } from "@heroicons/react/24/solid";
 import { motion } from "framer-motion";
 
 export default function ArtistPage({ params }) {
   const { name } = use(params);
   const decodedName = decodeURIComponent(name);
-  const { library, setCurrentTrack, setIsPlaying } = usePlayerStore();
+  const {
+    library,
+    setCurrentTrack,
+    setIsPlaying,
+    setQueue,
+    addToQueue,
+    cachedArtists,
+    setCachedArtist,
+  } = usePlayerStore();
   const [artistInfo, setArtistInfo] = useState(null);
 
   useEffect(() => {
     const fetchArtistInfo = async () => {
+      if (cachedArtists[decodedName]) {
+        setArtistInfo(cachedArtists[decodedName]);
+        return;
+      }
+
       try {
         const res = await fetch(
           `/api/artist-info?name=${encodeURIComponent(decodedName)}`
         );
         const data = await res.json();
         setArtistInfo(data);
+        setCachedArtist(decodedName, data);
       } catch (error) {
         console.error("Failed to fetch artist info:", error);
       }
@@ -46,23 +60,42 @@ export default function ArtistPage({ params }) {
     return acc;
   }, {});
 
-  const playTrack = (track) => {
+  const playTrack = (track, albumTracks) => {
+    const trackIndex = albumTracks.findIndex((t) => t.id === track.id);
     setCurrentTrack(track);
     setIsPlaying(true);
+    setQueue([
+      ...albumTracks.slice(trackIndex),
+      ...albumTracks.slice(0, trackIndex),
+    ]);
+  };
+
+  const playAlbum = (albumTracks) => {
+    if (albumTracks.length > 0) {
+      setCurrentTrack(albumTracks[0]);
+      setIsPlaying(true);
+      setQueue(albumTracks);
+    }
+  };
+
+  const addAlbumToQueue = (albumTracks) => {
+    addToQueue(albumTracks);
   };
 
   return (
     <div className="space-y-8">
       <div className="relative h-[400px] -mx-8 -mt-8">
-        {artistInfo?.image ? (
-          <img
-            src={artistInfo.image}
-            alt={decodedName}
-            className="w-full h-full object-cover"
-          />
-        ) : (
-          <div className="w-full h-full bg-gradient-to-b from-red-500/20 to-black" />
-        )}
+        <div
+          className="absolute inset-0 bg-gradient-to-b from-black/60 to-black"
+          style={{
+            backgroundImage: artistInfo?.image
+              ? `url(${artistInfo.image})`
+              : "none",
+            backgroundSize: "cover",
+            backgroundPosition: "center",
+            backgroundBlendMode: "overlay",
+          }}
+        />
         <div className="absolute bottom-0 left-0 right-0 p-8 bg-gradient-to-t from-black via-black/80 to-transparent">
           <h1 className="text-6xl font-bold">{decodedName}</h1>
           {artistInfo?.listeners && (
@@ -89,11 +122,26 @@ export default function ArtistPage({ params }) {
                 alt={album.name}
                 className="w-40 h-40 object-cover rounded-xl"
               />
-              <div>
+              <div className="flex-1">
                 <h2 className="text-2xl font-semibold">{album.name}</h2>
                 {album.year && (
                   <p className="text-gray-400">Album • {album.year}</p>
                 )}
+                <div className="flex gap-4 mt-4">
+                  <button
+                    onClick={() => playAlbum(album.tracks)}
+                    className="px-6 py-2 bg-red-500 rounded-full font-semibold hover:bg-red-600 transition-colors text-sm"
+                  >
+                    Play
+                  </button>
+                  <button
+                    onClick={() => addAlbumToQueue(album.tracks)}
+                    className="px-6 py-2 bg-white/10 rounded-full font-semibold hover:bg-white/20 transition-colors text-sm flex items-center gap-2"
+                  >
+                    <QueueListIcon className="w-4 h-4" />
+                    Add to Queue
+                  </button>
+                </div>
               </div>
             </div>
 
@@ -110,7 +158,7 @@ export default function ArtistPage({ params }) {
                     {index + 1}
                   </span>
                   <button
-                    onClick={() => playTrack(track)}
+                    onClick={() => playTrack(track, album.tracks)}
                     className="hidden group-hover:block"
                   >
                     <PlayIcon className="w-6 h-6 text-white" />

@@ -6,26 +6,31 @@ export async function getLastFMAlbumInfo(artist, album) {
     artist
   )}&album=${encodeURIComponent(album)}&format=json`;
 
-  const res = await fetch(url);
-  if (!res.ok) return null;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
 
-  const data = await res.json();
-  if (!data.album) return null;
+    const data = await res.json();
+    if (!data.album) return null;
 
-  // Extract year from published date string
-  let year = null;
-  if (data.album?.wiki.published) {
-    const dateStr = data.album.wiki.published.trim(); // e.g. '03 Mar 2024, 14:01'
-    // Extract last 4 digits that represent year using regex
-    const match = dateStr.match(/\b(\d{4})\b/);
-    if (match) year = match[1];
+    // Extract year from published date string safely
+    let year = null;
+    const published = data.album?.wiki?.published;
+    if (published && typeof published === "string") {
+      const match = published.trim().match(/\b(\d{4})\b/);
+      if (match) year = match[1];
+    }
+
+    return {
+      year,
+      genres: data.album?.tags?.tag?.map((t) => t.name) || [],
+      albumArtUrl:
+        data.album?.image?.length > 0
+          ? data.album.image[data.album.image.length - 1]["#text"]
+          : null,
+    };
+  } catch (err) {
+    console.error("LastFM fetch failed:", err);
+    return null;
   }
-
-  return {
-    year,
-    genres: data.album?.tags?.tag?.map((t) => t.name) || [],
-    albumArtUrl: data.album?.image?.length
-      ? data.album.image[data.album.image.length - 1]["#text"]
-      : null,
-  };
 }

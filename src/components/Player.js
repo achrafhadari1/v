@@ -188,10 +188,10 @@ export default function Player() {
                   <img
                     src={currentTrack.albumArtUrl}
                     alt="Album Art"
-                    className="w-[400px] h-[400px] rounded-2xl shadow-2xl object-cover"
+                    className="w-[260px] h-[260px] rounded-2xl shadow-2xl object-cover"
                   />
                 ) : (
-                  <div className="w-[400px] h-[400px] bg-[#2A2A2A] rounded-2xl flex items-center justify-center text-6xl">
+                  <div className="w-[200px] h-[200px] bg-[#2A2A2A] rounded-2xl flex items-center justify-center text-6xl">
                     🎵
                   </div>
                 )}

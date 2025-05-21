@@ -33,19 +33,21 @@ export async function getFileMetadata(fileId) {
   return res.data;
 }
 
-export async function listMusicFiles() {
-  const drive = await getDriveClient();
-  const folderId = process.env.GOOGLE_DRIVE_MUSIC_FOLDER_ID; // set this in env if needed
+export async function listMusicFiles(pageToken = null, allFiles = []) {
+  const drive = await getDriveClient(); // ← THIS was missing in your version
 
   const res = await drive.files.list({
-    q: folderId
-      ? `'${folderId}' in parents and mimeType contains 'audio/'`
-      : "mimeType contains 'audio/'",
-    fields: "files(id, name, mimeType)",
+    q: "mimeType contains 'audio/' and trashed = false",
+    fields: "nextPageToken, files(id, name, mimeType, size, modifiedTime)",
+    pageSize: 1000,
+    pageToken,
     supportsAllDrives: true,
     includeItemsFromAllDrives: true,
-    pageSize: 100,
   });
 
-  return res.data.files || [];
+  const files = allFiles.concat(res.data.files);
+  if (res.data.nextPageToken) {
+    return listMusicFiles(res.data.nextPageToken, files);
+  }
+  return files;
 }

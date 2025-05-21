@@ -24,12 +24,12 @@ export default function Sidebar() {
           Music
         </h1>
 
-        <nav className="space-y-1">
+        <nav className="space-y-1 flex flex-col gap-2">
           {navigation.map((item) => (
             <Link
               key={item.name}
               href={item.href}
-              className={`sidebar-link ${
+              className={`sidebar-link flex w-full gap-2 ${
                 pathname === item.href ? "active" : ""
               }`}
             >

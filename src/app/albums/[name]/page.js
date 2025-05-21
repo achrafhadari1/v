@@ -2,7 +2,7 @@
 
 import { useEffect, useState, use } from "react";
 import { usePlayerStore } from "@/store/player";
-import { PlayIcon, PauseIcon } from "@heroicons/react/24/solid";
+import { PlayIcon, PauseIcon, QueueListIcon } from "@heroicons/react/24/solid";
 import { motion } from "framer-motion";
 
 export default function AlbumPage({ params }) {
@@ -15,10 +15,25 @@ export default function AlbumPage({ params }) {
     setCurrentTrack,
     setIsPlaying,
     setQueue,
+    addToQueue,
+    cachedAlbums,
+    setCachedAlbum,
   } = usePlayerStore();
 
   const albumTracks = library.filter((track) => track.album === decodedName);
   const albumInfo = albumTracks[0] || {};
+
+  useEffect(() => {
+    if (!cachedAlbums[decodedName] && albumTracks.length > 0) {
+      setCachedAlbum(decodedName, {
+        name: decodedName,
+        artist: albumInfo.artist,
+        tracks: albumTracks,
+        artwork: albumInfo.albumArtUrl,
+        year: albumInfo.year,
+      });
+    }
+  }, [decodedName, albumTracks]);
 
   const isTrackPlaying = (track) => {
     return currentTrack?.id === track.id && isPlaying;
@@ -30,7 +45,7 @@ export default function AlbumPage({ params }) {
     } else {
       setCurrentTrack(track);
       setIsPlaying(true);
-      // Update queue to include all album tracks starting from the selected track
+      // Set the queue to all remaining tracks in the album
       const newQueue = [
         ...albumTracks.slice(index),
         ...albumTracks.slice(0, index),
@@ -45,6 +60,10 @@ export default function AlbumPage({ params }) {
       setIsPlaying(true);
       setQueue(albumTracks);
     }
+  };
+
+  const addAlbumToQueue = () => {
+    addToQueue(albumTracks);
   };
 
   return (
@@ -86,12 +105,21 @@ export default function AlbumPage({ params }) {
               <span>{albumTracks.length} songs</span>
             </div>
 
-            <button
-              onClick={playAlbum}
-              className="px-8 py-3 bg-red-500 rounded-full font-semibold hover:bg-red-600 transition-colors"
-            >
-              Play
-            </button>
+            <div className="flex gap-4">
+              <button
+                onClick={playAlbum}
+                className="px-8 py-3 bg-red-500 rounded-full font-semibold hover:bg-red-600 transition-colors"
+              >
+                Play
+              </button>
+              <button
+                onClick={addAlbumToQueue}
+                className="px-8 py-3 bg-white/10 rounded-full font-semibold hover:bg-white/20 transition-colors flex items-center gap-2"
+              >
+                <QueueListIcon className="w-5 h-5" />
+                Add to Queue
+              </button>
+            </div>
           </motion.div>
         </div>
       </div>
